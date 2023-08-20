@@ -35,6 +35,7 @@ main() {
 	mirrors_config
 	boot_backup_hook
 	zram_config
+	dns_config
 	services_enable
 
 	print "Done, you may now wish to reboot."
@@ -88,6 +89,7 @@ display_server() {
 
 	if [ $display_server = "Xorg" ]; then
 		pkgs_extra+=(i3-wm lightdm lightdm-gtk-greeter xorg-server xorg-xrdb)
+		keymap="$keymap"
 	elif [ $display_server = "Wayland" ]; then
 		pkgs_extra+=(sway swayidle wayland)
 	fi
@@ -220,13 +222,13 @@ pacman_mirrors() {
 basesystem_install() {
 	print "Installing base system with $display_server packages."
 
-	timedatectl set-ntp true &> /dev/null
+	timedatectl set-ntp 1 &> /dev/null
 
 	sed -i 's/#Color/Color/' /etc/pacman.conf
 	sed -i 's/#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf
 
 	pacman -Sy archlinux-keyring --noconfirm
-	yes '' | pacstrap /mnt base base-devel btrfs-progs linux linux-firmware networkmanager reflector rsync snapper zram-generator $microcode "${video_drivers[@]}" "${pkgs_extra[@]}"
+	yes '' | pacstrap /mnt base base-devel btrfs-progs linux linux-firmware networkmanager dnsmasq reflector rsync snapper zram-generator $microcode "${video_drivers[@]}" "${pkgs_extra[@]}"
 
 	print "Setting hosts file."
 	cat > /mnt/etc/hosts <<- EOF
@@ -245,6 +247,10 @@ bootloader_config() {
 		kernel_params+=" psmouse.synaptics_intertouch=1"
 	fi
 
+	if [[ "$cpu_type" = "AMD" ]]; then
+		kernel_params+=" amd_pstate=active"
+	fi
+
 	if [ $firmware_type = "UEFI" ]; then
 		print "Configuring systemd-boot."
 
@@ -254,6 +260,7 @@ bootloader_config() {
 			timeout 0
 			editor no
 		EOF
+
 		cat > /mnt/boot/loader/entries/arch.conf <<- EOF
 			title Arch Linux
 			linux /vmlinuz-linux
@@ -338,11 +345,11 @@ fstab_generate() {
 
 mkinitcpio_generate() {
 	print "Configuring /etc/mkinitcpio.conf."
-
 	cat > /mnt/etc/mkinitcpio.conf <<- EOF
 		HOOKS=(base systemd autodetect keyboard sd-vconsole modconf block sd-encrypt filesystems fsck)
 		COMPRESSION=(zstd)
 	EOF
+
 	print "Generating a new initramfs."
 	arch-chroot /mnt mkinitcpio -P &> /dev/null
 }
@@ -429,10 +436,27 @@ zram_config() {
 	EOF
 }
 
+dns_config() {
+	print "Configuring dns"
+
+	mkdir -p /mnt/etc/NetworkManager/conf.d
+	mkdir -p /mnt/etc/NetworkManager/dnsmasq.d
+
+	cat > /mnt/etc/NetworkManager/conf.d/dns.conf <<- EOF
+		[main]
+		dns=dnsmasq
+	EOF
+
+	# Example: direct "*.nomad" domains to 192.168.1.160
+	# cat > /mnt/etc/NetworkManager/dnsmasq.d/hosts.conf <<- EOF
+	# 	address=/nomad/192.168.1.160
+	# EOF
+}
+
 services_enable() {
 	print "Enabling services."
 
-	services="archlinux-keyring-wkd-sync.timer btrfs-scrub@-.timer NetworkManager.service reflector.timer snapper-cleanup.timer snapper-timeline.timer systemd-oomd systemd-timesyncd"
+	services="archlinux-keyring-wkd-sync.timer btrfs-scrub@-.timer dnsmasq.service NetworkManager.service reflector.timer snapper-cleanup.timer snapper-timeline.timer systemd-oomd systemd-timesyncd"
 
 	if [ $display_server = "Xorg" ]; then
 		services+=" lightdm.service"
