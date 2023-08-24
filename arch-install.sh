@@ -456,7 +456,7 @@ dns_config() {
 services_enable() {
 	print "Enabling services."
 
-	services="archlinux-keyring-wkd-sync.timer btrfs-scrub@-.timer dnsmasq.service NetworkManager.service reflector.timer snapper-cleanup.timer snapper-timeline.timer systemd-oomd systemd-timesyncd"
+	services="archlinux-keyring-wkd-sync.timer btrfs-scrub@-.timer NetworkManager.service reflector.timer snapper-cleanup.timer snapper-timeline.timer systemd-oomd systemd-timesyncd"
 
 	if [ $display_server = "Xorg" ]; then
 		services+=" lightdm.service"
