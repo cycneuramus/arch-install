@@ -89,7 +89,6 @@ display_server() {
 
 	if [ $display_server = "Xorg" ]; then
 		pkgs_extra+=(i3-wm lightdm lightdm-gtk-greeter xorg-server xorg-xrdb)
-		keymap="$keymap"
 	elif [ $display_server = "Wayland" ]; then
 		pkgs_extra+=(sway swayidle wayland)
 	fi
@@ -228,7 +227,22 @@ basesystem_install() {
 	sed -i 's/#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf
 
 	pacman -Sy archlinux-keyring --noconfirm
-	yes '' | pacstrap /mnt base base-devel btrfs-progs linux linux-firmware networkmanager dnsmasq reflector rsync snapper zram-generator $microcode "${video_drivers[@]}" "${pkgs_extra[@]}"
+
+	pkgs=(
+		base
+		base-devel
+		btrfs-progs
+		dnsmasq
+		linux
+		linux-firmware
+		networkmanager
+		reflector
+		rsync
+		snapper
+		zram-generator
+	)
+
+	yes '' | pacstrap /mnt "${pkgs[@]}" $microcode "${video_drivers[@]}" "${pkgs_extra[@]}"
 
 	print "Setting hosts file."
 	cat > /mnt/etc/hosts <<- EOF
@@ -456,15 +470,24 @@ dns_config() {
 services_enable() {
 	print "Enabling services."
 
-	services="archlinux-keyring-wkd-sync.timer btrfs-scrub@-.timer NetworkManager.service reflector.timer snapper-cleanup.timer snapper-timeline.timer systemd-oomd systemd-timesyncd"
+	services=(
+		archlinux-keyring-wkd-sync.timer
+		btrfs-scrub@-.timer
+		NetworkManager.service
+		reflector.timer
+		snapper-cleanup.timer
+		snapper-timeline.timer
+		systemd-oomd
+		systemd-timesyncd
+	)
 
 	if [ $display_server = "Xorg" ]; then
-		services+=" lightdm.service"
+		services+=(lightdm.service)
 	elif [ $display_server = "Wayland" ]; then
-		services+=" systemd-boot-update.service"
+		services+=(systemd-boot-update.service)
 	fi
 
-	for service in $services; do
+	for service in "${services[@]}"; do
 		systemctl enable "$service" --root=/mnt &> /dev/null
 	done
 }
