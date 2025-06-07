@@ -474,6 +474,7 @@ services_enable() {
 		archlinux-keyring-wkd-sync.timer
 		btrfs-scrub@-.timer
 		NetworkManager.service
+		linux-modules-cleanup.service
 		reflector.timer
 		snapper-cleanup.timer
 		snapper-timeline.timer
