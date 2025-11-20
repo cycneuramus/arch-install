@@ -354,7 +354,7 @@ home_dir_setup() {
 
 fstab_generate() {
 	print "Generating a new fstab."
-	genfstab -U /mnt | sed -e 's/suvolid=[0-9]*,//g' >> /mnt/etc/fstab
+	genfstab -U /mnt | sed -e 's/subvolid=[0-9]*,//g' >> /mnt/etc/fstab
 }
 
 mkinitcpio_generate() {
