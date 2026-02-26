@@ -262,7 +262,7 @@ bootloader_config() {
 	fi
 
 	if [[ "$cpu_type" = "AMD" ]]; then
-		kernel_params+=" amd_pstate=active"
+		kernel_params+=" amd_pstate=active amdgpu.gpu_recovery=1"
 	fi
 
 	if [ $firmware_type = "UEFI" ]; then
