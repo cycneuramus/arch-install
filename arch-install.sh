@@ -36,7 +36,7 @@ main() {
 	mirrors_config
 	boot_backup_hook
 	zram_config
-	dns_config
+	# dns_config
 	services_enable
 
 	print "Done, you may now wish to reboot."
@@ -148,9 +148,9 @@ partition_disk() {
 	if [ $firmware_type = "UEFI" ]; then
 		parted -s "$disk" \
 			mklabel gpt \
-			mkpart ESP fat32 1MiB 201MiB \
+			mkpart ESP fat32 1MiB 501MiB \
 			set 1 esp on \
-			mkpart root 201MiB 100%
+			mkpart root 501MiB 100%
 	elif [ $firmware_type = "BIOS" ]; then
 		parted -s "$disk" \
 			mklabel msdos \
@@ -259,13 +259,16 @@ basesystem_install() {
 		zram-generator
 	)
 
+	pacstrap /mnt filesystem
+	echo "KEYMAP=$keymap" > /mnt/etc/vconsole.conf
+
 	yes '' | pacstrap /mnt "${pkgs[@]}" $microcode "${video_drivers[@]}" "${pkgs_extra[@]}"
 
 	print "Setting hosts file."
 	cat > /mnt/etc/hosts <<- EOF
-		127.0.0.1   localhost
-		::1         localhost
-		127.0.1.1   $hostname.localdomain   $hostname
+		127.0.0.1 localhost
+		::1       localhost
+		127.0.1.1 $hostname.localdomain $hostname
 	EOF
 }
 
@@ -323,10 +326,9 @@ password_set() {
 localization_config() {
 	print "Configuring localization settings."
 
-	ln -sf /mnt/usr/share/zoneinfo/"$timezone" /mnt/etc/localtime &> /dev/null
+	ln -sf /usr/share/zoneinfo/"$timezone" /mnt/etc/localtime &> /dev/null
 	arch-chroot /mnt hwclock --systohc
 
-	echo "KEYMAP=$keymap" > /mnt/etc/vconsole.conf
 	echo "$locale UTF-8" > /mnt/etc/locale.gen
 	echo "LANG=$locale" > /mnt/etc/locale.conf
 
@@ -399,8 +401,8 @@ fstab_generate() {
 mkinitcpio_generate() {
 	print "Configuring /etc/mkinitcpio.conf."
 	cat > /mnt/etc/mkinitcpio.conf <<- EOF
-		HOOKS=(base systemd autodetect keyboard sd-vconsole modconf block sd-encrypt filesystems fsck)
-		COMPRESSION=(zstd)
+		HOOKS=(base systemd autodetect microcode modconf kms keyboard sd-vconsole block sd-encrypt filesystems fsck)
+		COMPRESSION="zstd"
 	EOF
 
 	print "Generating a new initramfs."
@@ -502,7 +504,7 @@ dns_config() {
 
 	# Example: direct "*.nomad" domains to 192.168.1.160
 	# cat > /mnt/etc/NetworkManager/dnsmasq.d/hosts.conf <<- EOF
-	# 	address=/nomad/192.168.1.160
+	#	address=/nomad/192.168.1.160
 	# EOF
 }
 
@@ -523,7 +525,9 @@ services_enable() {
 
 	if [ $display_server = "Xorg" ]; then
 		services+=(lightdm.service)
-	elif [ $display_server = "Wayland" ]; then
+	fi
+
+	if [ $firmware_type = "UEFI" ]; then
 		services+=(systemd-boot-update.service)
 	fi
 
