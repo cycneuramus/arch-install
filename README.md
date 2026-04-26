@@ -9,7 +9,7 @@ A *very* opinionated `bash` script for installing Arch Linux, designed to be non
 + Auto-detects and configures UEFI + `systemd-boot` or BIOS + `GRUB`
 + Auto-detects CPU (Intel or AMD) and installs appropriate microcode + drivers
 + Automatic `/boot` backup on kernel upgrades
-+ Installs Wayland + `sway` (default) or Xorg + `i3`
++ Installs Wayland + `sway` or `hyprland` (default), or Xorg + `i3`
 + [zram](https://wiki.archlinux.org/title/improving_performance#zram_or_zswap)
 + [systemd-oomd](https://man.archlinux.org/man/systemd-oomd.service.8.en)
 
