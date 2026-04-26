@@ -317,7 +317,7 @@ localization_config() {
 
 	if [ $display_server = "Xorg" ]; then
 		mkdir -p /mnt/etc/X11/xorg.conf.d/
-		cat > /etc/X11/xorg.conf.d/00-keyboard.conf <<- EOF
+		cat > /mnt/etc/X11/xorg.conf.d/00-keyboard.conf <<- EOF
 			Section "InputClass"
 				Identifier "system-keyboard"
 				MatchIsKeyboard "on"
