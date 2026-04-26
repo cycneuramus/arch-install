@@ -6,6 +6,7 @@ clear
 username="your_username_here"
 hostname="archlinux"
 display_server="Wayland"
+wayland_wm="hyprland"
 mirrors_country="Sweden"
 timezone="Europe/Stockholm"
 keymap="sv-latin1"
@@ -90,7 +91,23 @@ display_server() {
 	if [ $display_server = "Xorg" ]; then
 		pkgs_extra+=(i3-wm lightdm lightdm-gtk-greeter xorg-server xorg-xrdb)
 	elif [ $display_server = "Wayland" ]; then
-		pkgs_extra+=(sway swayidle wayland)
+		case "$wayland_wm" in
+			sway)
+				pkgs_extra+=(
+					sway
+					swayidle
+					wayland
+				)
+				;;
+			hyprland)
+				pkgs_extra+=(
+					hyprland
+					wayland
+					xdg-desktop-portal-hyprland
+					xdg-desktop-portal-gtk
+				)
+				;;
+		esac
 	fi
 }
 
@@ -325,22 +342,44 @@ localization_config() {
 			EndSection
 		EOF
 	elif [ $display_server = "Wayland" ]; then
-		mkdir -p /mnt/home/$username/{.config,.config/sway}
-		sway_conf=/mnt/home/$username/.config/sway/config
-		cp /mnt/etc/sway/config $sway_conf
-
 		if [ "$terminal" = "kitty" ]; then
-			sway_terminal="$terminal --single-instance"
+			wayland_terminal="$terminal --single-instance"
 		else
-			sway_terminal="$terminal"
+			wayland_terminal="$terminal"
 		fi
 
-		sed -i "s/set \$term.*/set \$term \"$sway_terminal\"/g" $sway_conf
-		cat >> $sway_conf <<- EOF
-			input "type:keyboard" {
-				xkb_layout $keylayout
-			}
-		EOF
+		case "$wayland_wm" in
+			sway)
+				mkdir -p /mnt/home/$username/{.config,.config/sway}
+				sway_conf=/mnt/home/$username/.config/sway/config
+				cp /mnt/etc/sway/config $sway_conf
+
+				sed -i "s/set \$term.*/set \$term \"$wayland_terminal\"/g" $sway_conf
+				cat >> $sway_conf <<- EOF
+					input "type:keyboard" {
+						xkb_layout $keylayout
+					}
+				EOF
+				;;
+			hyprland)
+				mkdir -p "/mnt/home/$username/.config/hypr"
+				hypr_conf="/mnt/home/$username/.config/hypr/hyprland.conf"
+
+				cat > "$hypr_conf" <<- EOF
+					\$super = MOD4
+
+					exec = systemctl --user start hyprland-session.target
+					exec = systemctl --user import-environment DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP
+					exec = dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP
+
+					input {
+						kb_layout = $keylayout
+					}
+
+					bind = \$super, Return, exec, "$wayland_terminal"
+				EOF
+				;;
+		esac
 	fi
 }
 
