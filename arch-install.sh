@@ -378,7 +378,7 @@ localization_config() {
 						kb_layout = $keylayout
 					}
 
-					bind = \$super, Return, exec, "$wayland_terminal"
+					bind = \$super, Return, exec, $wayland_terminal
 				EOF
 				;;
 		esac
