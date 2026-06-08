@@ -15,33 +15,6 @@ locale="sv_SE.UTF-8"
 terminal="kitty"
 pkgs_extra=("$terminal" git vim)
 
-main() {
-	unmount_cryptroot
-	disk_target
-	password_select
-	display_server
-	firmware_detect
-	cpu_detect
-	partition_disk
-	filesystem_setup
-	pacman_mirrors
-	basesystem_install
-	bootloader_config
-	password_set
-	localization_config
-	home_dir_setup
-	fstab_generate
-	mkinitcpio_generate
-	snapper_config
-	mirrors_config
-	boot_backup_hook
-	zram_config
-	# dns_config
-	services_enable
-
-	print "Done, you may now wish to reboot."
-}
-
 # Pretty print function.
 print() {
 	echo -e "\e[1m\e[93m[ \e[92m•\e[93m ] \e[4m$1\e[0m"
@@ -532,8 +505,37 @@ services_enable() {
 	fi
 
 	for service in "${services[@]}"; do
-		systemctl enable "$service" --root=/mnt &> /dev/null
+		if ! systemctl --root=/mnt enable "$service"; then
+			print "Failed to enable $service"
+		fi
 	done
+}
+
+main() {
+	unmount_cryptroot
+	disk_target
+	password_select
+	display_server
+	firmware_detect
+	cpu_detect
+	partition_disk
+	filesystem_setup
+	pacman_mirrors
+	basesystem_install
+	bootloader_config
+	password_set
+	localization_config
+	home_dir_setup
+	fstab_generate
+	mkinitcpio_generate
+	snapper_config
+	mirrors_config
+	boot_backup_hook
+	zram_config
+	# dns_config
+	services_enable
+
+	print "Done, you may now wish to reboot."
 }
 
 if [ $# = 0 ]; then
