@@ -223,6 +223,7 @@ basesystem_install() {
 		base-devel
 		btrfs-progs
 		dnsmasq
+		kernel-modules-hook
 		linux
 		linux-firmware
 		networkmanager
